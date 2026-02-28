@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mafia Hub</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #000; color: #fff; text-align: center; padding: 20px; }
+        .player-card { background: #1a1a1a; border: 2px solid #0088cc; border-radius: 15px; padding: 15px; margin: 10px; }
+        .avatar { font-size: 40px; display: block; }
+        h2 { color: #0088cc; }
+    </style>
+</head>
+<body>
+    <h2>🕵️‍♂️ Mafia Online</h2>
+    <div id="status">Ожидание начала игры...</div>
+    <div id="players">
+        <div class="player-card">
+            <span class="avatar">❓</span>
+            <p>Твой персонаж появится здесь после начала игры</p>
+        </div>
+    </div>
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+    </script>
+</body>
+</html>
