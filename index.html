@@ -1,60 +1,60 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mafia Lab</title>
+    <title>Mafia Play</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: white; text-align: center; margin: 0; padding: 20px; }
-        .card { background: linear-gradient(145deg, #1a1a1a, #0a0a0a); border: 2px solid #0088cc; border-radius: 25px; padding: 30px 15px; margin-top: 20px; box-shadow: 0 0 20px rgba(0,136,204,0.4); }
-        .avatar { font-size: 80px; display: block; margin-bottom: 10px; }
-        .role { font-size: 28px; font-weight: bold; color: #00ff41; text-transform: uppercase; letter-spacing: 2px; }
-        .name { font-size: 18px; color: #aaa; margin-bottom: 20px; }
-        .status { display: inline-block; background: #222; padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #333; }
-        h2 { margin-top: 0; color: #0088cc; }
+        body { font-family: sans-serif; background: #000; color: #fff; text-align: center; padding: 20px; }
+        .card { background: #111; border: 2px solid #0088cc; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+        .avatar { font-size: 60px; }
+        .role { font-size: 24px; color: #00ff41; font-weight: bold; }
+        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn-kill { background: #ff4141; color: white; }
+        .btn-vote { background: #00ff41; color: black; }
+        .btn-check { background: #0088cc; color: white; }
     </style>
 </head>
 <body>
-
-    <div id="game-view">
-        <div class="card">
-            <span class="avatar" id="avatar">❓</span>
-            <div class="name" id="username">Загрузка данных...</div>
-            <div class="role" id="role">ПОИСК РОЛИ...</div>
-            <br>
-            <div class="status">СТАТУС: ЖИВ ✅</div>
-        </div>
+    <div class="card">
+        <span class="avatar" id="avatar">❓</span>
+        <div id="name">Игрок</div>
+        <div class="role" id="role">РОЛЬ</div>
     </div>
 
-    <p style="margin-top: 30px; color: #444; font-size: 14px;">Обсуждайте игру в голосовом чате Telegram</p>
+    <div id="controls">
+        <p>Доступные действия:</p>
+        <div id="night-actions" style="display:none;">
+            <button class="btn-kill" id="kill-btn" onclick="sendAction('kill')">УБИТЬ СЛУЧАЙНОГО БОТА</button>
+            <button class="btn-check" id="check-btn" onclick="sendAction('check')">ПРОВЕРИТЬ ИГРОКА</button>
+        </div>
+        <div id="day-actions">
+            <button class="btn-vote" onclick="sendAction('vote')">ГОЛОСОВАТЬ ПРОТИВ ВСЕХ</button>
+        </div>
+    </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        tg.ready();
 
-        // Функция для чтения данных из ссылки
-        function updatePlayerData() {
-            const params = new URLSearchParams(window.location.search);
-            const userRole = params.get('role');
-            const userAvatar = params.get('avatar');
-            const userName = params.get('name');
+        const params = new URLSearchParams(window.location.search);
+        const roleKey = params.get('role_key');
+        const roleName = params.get('role');
 
-            if (userRole && userAvatar) {
-                document.getElementById('role').innerText = userRole;
-                document.getElementById('avatar').innerText = userAvatar;
-                document.getElementById('username').innerText = userName;
-                
-                // Легкая вибрация при открытии
-                tg.HapticFeedback.impactOccurred('medium');
-            } else {
-                document.getElementById('username').innerText = "Ошибка доступа";
-                document.getElementById('role').innerText = "ЗАЙДИ ИЗ ЧАТА";
-            }
+        document.getElementById('role').innerText = roleName;
+        document.getElementById('avatar').innerText = params.get('avatar');
+        document.getElementById('name').innerText = params.get('name');
+
+        // Показываем кнопки в зависимости от роли
+        if (roleKey === 'mafia') document.getElementById('night-actions').style.display = 'block';
+        if (roleKey === 'detective') document.getElementById('night-actions').style.display = 'block';
+        if (roleKey === 'doctor') document.getElementById('night-actions').style.display = 'block';
+
+        function sendAction(type) {
+            tg.sendData("ACTION:" + type);
+            tg.close();
         }
-
-        updatePlayerData();
     </script>
 </body>
 </html>
