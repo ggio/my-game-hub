@@ -17,7 +17,7 @@ except ImportError:
 
 # --- НАСТРОЙКИ ---
 TOKEN = "8271945254:AAFY79RsyOuKjBe4Jposj_NsarOD0pqpaxs"
-URL_APP = "https://PRODESK.github.io/my-game-hub/" 
+URL_APP = "https://ggio.github.io/my-game-hub/"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
