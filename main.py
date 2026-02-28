@@ -7,79 +7,103 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from themes import THEMES
 
 TOKEN = "8271945254:AAFY79RsyOuKjBe4Jposj_NsarOD0pqpaxs"
-URL_APP = "https://PRODESK.github.io/my-game-hub/" # Твоя ссылка на GitHub
+URL_APP = "https://PRODESK.github.io/my-game-hub/" 
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Переменные для хранения состояния игры
-lobby = [] # Список игроков: [{"id": 123, "name": "Ivan"}, ...]
+# Глобальное состояние игры
+lobby = [] 
+game_players = [] # Список всех участников (люди + боты)
+bot_names = ["Робот Вася", "Кибер-Петр", "Андроид Ева", "Бот Иван", "R2-D2", "Терминатор"]
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer(
-        f"Привет, {message.from_user.first_name}! 🕵️‍♂️\n"
-        "Добро пожаловать в Mafia Online.\n\n"
-        "Напиши /join чтобы зайти в лобби.\n"
-        "Когда наберется 6 человек, мы выберем тему и начнем!"
-    )
+    lobby.clear()
+    await message.answer("🕵️‍♂️ Мафия онлайн.\nНапиши /join для входа в лобби.")
 
 @dp.message(Command("join"))
 async def cmd_join(message: types.Message):
-    global lobby
-    # Проверяем, нет ли уже игрока в списке
-    if any(player['id'] == message.from_user.id for player in lobby):
+    if any(p['id'] == message.from_user.id for p in lobby):
         await message.answer("Ты уже в очереди!")
         return
 
-    lobby.append({"id": message.from_user.id, "name": message.from_user.first_name})
-    count = len(lobby)
-    await message.answer(f"✅ {message.from_user.first_name} в игре! (Собрано: {count}/6)")
+    lobby.append({"id": message.from_user.id, "name": message.from_user.first_name, "is_bot": False})
+    
+    builder = InlineKeyboardBuilder()
+    if len(lobby) >= 1: # Позволяем начать даже одному для теста
+        builder.button(text="🤖 Добавить ботов и начать", callback_data="start_with_bots")
+    
+    await message.answer(f"✅ Ты в лобби! (Игроков: {len(lobby)}/6)", reply_markup=builder.as_markup())
 
-    # Если набралось 6 — предлагаем выбрать тему
-    if count == 6:
-        builder = InlineKeyboardBuilder()
-        for key, theme in THEMES.items():
-            builder.button(text=theme['name'], callback_data=f"set_theme_{key}")
-        await message.answer("🎮 Лобби заполнено! Выберите вселенную для этой игры:", reply_markup=builder.as_markup())
+@dp.callback_query(F.data == "start_with_bots")
+async def fill_with_bots(callback: types.Callback_query):
+    global game_players
+    # Добираем ботов до 6 человек
+    game_players = list(lobby)
+    needed = 6 - len(game_players)
+    
+    random_bots = random.sample(bot_names, needed)
+    for name in random_bots:
+        game_players.append({"id": random.randint(1000, 9999), "name": name, "is_bot": True})
+    
+    builder = InlineKeyboardBuilder()
+    for key in THEMES.keys():
+        builder.button(text=THEMES[key]['name'], callback_data=f"game_theme_{key}")
+    
+    await callback.message.answer("Выбери вселенную игры:", reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data.startswith("set_theme_"))
-async def start_game(callback: types.Callback_query):
-    global lobby
+@dp.callback_query(F.data.startswith("game_theme_"))
+async def setup_game(callback: types.Callback_query):
     theme_key = callback.data.split("_")[2]
     theme = THEMES[theme_key]
     
-    await callback.message.answer(f"Мир выбран: {theme['name']}! Раздаю секретные роли...")
+    # Раздача ролей
+    random.shuffle(game_players)
+    roles = ["mafia", "doctor", "detective", "civilian", "civilian", "civilian"]
     
-    # Перемешиваем игроков и роли
-    random.shuffle(lobby)
-    roles_pool = ["mafia", "doctor", "detective"] + ["civilian"] * (len(lobby) - 3)
-    random.shuffle(roles_pool)
+    summary = []
+    player_data_for_app = []
 
-    for i, player in enumerate(lobby):
-        role_key = roles_pool[i]
+    for i, player in enumerate(game_players):
+        role_key = roles[i]
         role_name = theme['roles'][role_key]
         avatar = random.choice(theme['avatars'])
+        player['role'] = role_name
+        player['avatar'] = avatar
+        player['status'] = "Жив"
         
-        # Отправляем каждому его роль в личку
-        try:
-            msg = f"ТВОЯ РОЛЬ: {role_name}\nТВОЙ ОБЛИК: {avatar}\n\nНикому не говори! Тссс..."
-            await bot.send_message(player['id'], msg)
-        except:
-            await callback.message.answer(f"⚠️ {player['name']} не запустил бота, не могу отправить роль!")
+        summary.append(f"{avatar} {player['name']}: {role_name if player['is_bot'] else '???'}")
+        
+        # Если это живой игрок — шлем роль в ЛС
+        if not player['is_bot']:
+            await bot.send_message(player['id'], f"Твоя роль: {role_name}\nОблик: {avatar}")
+            user_link = f"{URL_APP}?role={role_name}&avatar={avatar}&name={player['name']}"
 
-    await callback.message.answer("🎭 Все роли розданы в ЛС! Открывайте Игротеку, чтобы видеть список выживших.")
+    await callback.message.answer(f"Мир: {theme['name']}\n\nСписок участников:\n" + "\n".join(summary))
     
-    # Кнопка для входа в Mini App
     builder = ReplyKeyboardBuilder()
-    builder.row(types.KeyboardButton(text="📱 Открыть статус игры", web_app=WebAppInfo(url=URL_APP)))
-    await callback.message.answer("Нажмите кнопку ниже:", reply_markup=builder.as_markup(resize_keyboard=True))
+    builder.row(types.KeyboardButton(text="📱 Открыть статус игры", web_app=WebAppInfo(url=user_link)))
+    await callback.message.answer("Игра началась! Ночь наступает...", reply_markup=builder.as_markup(resize_keyboard=True))
+
+    # Запускаем цикл симуляции ночи
+    await asyncio.sleep(3)
+    await simulate_night(callback.message)
+
+async def simulate_night(message):
+    await message.answer("🌙 **НОЧЬ**. Мафия и спецроли делают ход...")
+    await asyncio.sleep(4)
     
-    # Очищаем лобби для новой игры после старта
-    lobby = []
+    # Честная логика бота: мафия выбирает случайную жертву (не себя)
+    living_players = [p for p in game_players if p['status'] == "Жив"]
+    target = random.choice(living_players)
+    
+    await message.answer(f"☀️ **УТРО**. Город просыпается.\n\nК сожалению, этой ночью погиб {target['avatar']} {target['name']}.")
+    target['status'] = "Мертв"
+    
+    await message.answer("📣 Начинается обсуждение! Кто мафия? (Используйте голосовой чат)")
 
 async def main():
-    print("Мафия-бот запущен!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
