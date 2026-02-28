@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mars Colony Strategy</title>
+    <title>Mars Strategy</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: 'Courier New', monospace; background: #0a0e14; color: #00ff41; margin: 0; padding: 15px; overflow: hidden; }
-        .stat-bar { display: flex; justify-content: space-around; background: #161b22; padding: 10px; border: 1px solid #00ff41; border-radius: 10px; margin-bottom: 20px; font-size: 14px; }
-        .log-box { height: 150px; background: #000; border: 1px solid #333; padding: 10px; overflow-y: auto; font-size: 12px; margin-bottom: 20px; color: #aaa; }
+        .stat-bar { display: flex; justify-content: space-around; background: #161b22; padding: 10px; border: 1px solid #00ff41; border-radius: 10px; margin-bottom: 15px; font-size: 13px; }
+        .log-box { height: 180px; background: #000; border: 1px solid #333; padding: 10px; overflow-y: auto; font-size: 12px; margin-bottom: 15px; color: #aaa; text-align: left; }
         .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { background: #161b22; color: #00ff41; border: 1px solid #00ff41; padding: 15px 5px; cursor: pointer; font-family: inherit; border-radius: 5px; }
-        button:disabled { border-color: #333; color: #333; }
-        .event-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 2px solid #00ff41; padding: 20px; width: 80%; display: none; z-index: 100; text-align: center; }
-        .highlight { color: #fff; font-weight: bold; }
+        button { background: #161b22; color: #00ff41; border: 1px solid #00ff41; padding: 12px 5px; cursor: pointer; font-family: inherit; border-radius: 8px; font-size: 14px; }
+        button:active { background: #00ff41; color: #000; }
+        .event-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 2px solid #00ff41; padding: 20px; width: 85%; display: none; z-index: 100; text-align: center; box-shadow: 0 0 20px #000; }
     </style>
 </head>
 <body>
@@ -25,18 +24,16 @@
     </div>
 
     <div id="game-log" class="log-box">
-        <div>> Система запущена...</div>
-        <div>> Добро пожаловать, Командор.</div>
+        <div>> Система готова...</div>
+        <div>> Ожидание приказов Командора...</div>
     </div>
 
     <div class="actions">
-        <button onclick="mine()">⛏ Добыть ресурсы (-5⚡)</button>
-        <button onclick="build()">🏗 Построить жилье (-30📦)</button>
-        <button id="save-btn" onclick="saveGame()">💾 Сохранить в облако</button>
-        <button onclick="location.reload()">🔄 Начать заново</button>
+        <button onclick="mine()">⛏ Добыть (-5⚡)</button>
+        <button onclick="build()">🏗 Построить (-30📦)</button>
+        <button onclick="saveGame()" style="grid-column: span 2; border-color: #0088cc; color: #0088cc;">💾 Сохранить прогресс</button>
     </div>
 
-    <!-- Всплывающее событие -->
     <div id="event-popup" class="event-popup">
         <h3 id="event-title">Событие!</h3>
         <p id="event-text"></p>
@@ -50,41 +47,33 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Состояние игры
-        let state = {
-            energy: 100,
-            minerals: 50,
-            pop: 10,
-            day: 1
-        };
-
-        const log = document.getElementById('game-log');
+        let state = { energy: 100, minerals: 50, pop: 10 };
 
         function updateUI() {
             document.getElementById('energy').innerText = state.energy;
             document.getElementById('minerals').innerText = state.minerals;
             document.getElementById('pop').innerText = state.pop;
-            
             if (state.energy <= 0 || state.pop <= 0) {
-                gameOver();
+                alert("Миссия провалена! Колония погибла.");
+                location.reload();
             }
         }
 
         function addLog(text) {
             let div = document.createElement('div');
             div.innerText = `> ${text}`;
+            let log = document.getElementById('game-log');
             log.prepend(div);
         }
 
-        // Действия
         function mine() {
             if (state.energy >= 5) {
                 state.energy -= 5;
-                let found = Math.floor(Math.random() * 10) + 2;
+                let found = Math.floor(Math.random() * 8) + 3;
                 state.minerals += found;
                 addLog(`Добыто ресурсов: ${found}`);
                 updateUI();
-                checkRandomEvent();
+                if (Math.random() > 0.7) showEvent();
             }
         }
 
@@ -92,41 +81,30 @@
             if (state.minerals >= 30) {
                 state.minerals -= 30;
                 state.pop += 5;
-                addLog(`Построено жилье. Прибыло +5 колонистов.`);
+                addLog(`Построено жилье. Прибыло +5 людей.`);
                 updateUI();
-            } else {
-                addLog(`Недостаточно ресурсов! Нужно 30.`);
-            }
-        }
-
-        // Интеллектуальная система событий
-        function checkRandomEvent() {
-            if (Math.random() > 0.7) {
-                showEvent();
-            }
+            } else { addLog(`Мало ресурсов! Нужен металл.`); }
         }
 
         function showEvent() {
             const events = [
                 {
-                    title: "Метеоритный дождь",
-                    text: "Метеориты повредили солнечные панели. Починить?",
-                    opt1: { name: "Да (-20📦)", run: () => { state.minerals -= 20; addLog("Панели починены."); } },
-                    opt2: { name: "Нет (-30⚡)", run: () => { state.energy -= 30; addLog("Энергия потеряна."); } }
+                    title: "Солнечная буря",
+                    text: "Выйти наружу для ремонта или переждать в бункере?",
+                    opt1: { name: "Чинить (-20📦)", run: () => { state.minerals -= 20; addLog("Ремонт завершен."); } },
+                    opt2: { name: "Ждать (-30⚡)", run: () => { state.energy -= 30; addLog("Энергия потеряна."); } }
                 },
                 {
-                    title: "Торговый корабль",
-                    text: "Предлагают обменять энергию на людей.",
-                    opt1: { name: "Обменять (-20⚡/+5👥)", run: () => { state.energy -= 20; state.pop += 5; } },
-                    opt2: { name: "Отказаться", run: () => { addLog("Корабль улетел."); } }
+                    title: "Загадочный сигнал",
+                    text: "Вы послали дрон на разведку. Что делать?",
+                    opt1: { name: "Захватить (+20📦)", run: () => { state.minerals += 20; } },
+                    opt2: { name: "Исследовать (+10⚡)", run: () => { state.energy += 10; } }
                 }
             ];
-
             let ev = events[Math.floor(Math.random() * events.length)];
             document.getElementById('event-title').innerText = ev.title;
             document.getElementById('event-text').innerText = ev.text;
             document.getElementById('event-popup').style.display = 'block';
-
             document.getElementById('opt1').onclick = () => { ev.opt1.run(); closeEvent(); };
             document.getElementById('opt2').onclick = () => { ev.opt2.run(); closeEvent(); };
         }
@@ -137,22 +115,15 @@
         }
 
         function saveGame() {
-            tg.sendData(`SAVE: День ${state.day}, Население ${state.pop}`);
+            tg.sendData(`SAVE: Ресурсы ${state.minerals}, Население ${state.pop}`);
             tg.HapticFeedback.notificationOccurred('success');
         }
 
-        function gameOver() {
-            alert("Колония погибла! Начните заново.");
-            state = { energy: 100, minerals: 50, pop: 10, day: 1 };
-            updateUI();
-        }
-
-        // Регенерация энергии со временем
+        // Регенерация энергии
         setInterval(() => {
-            state.energy = Math.min(state.energy + 2, 100);
+            state.energy = Math.min(state.energy + 1, 100);
             updateUI();
-        }, 5000);
-
+        }, 3000);
     </script>
 </body>
 </html>
