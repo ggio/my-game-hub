@@ -2,43 +2,59 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mafia Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mafia Lab</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: white; text-align: center; padding: 15px; }
-        .my-card { background: linear-gradient(145deg, #1a1a1a, #000); border: 2px solid #0088cc; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0,136,204,0.3); }
-        .avatar { font-size: 60px; margin-bottom: 10px; display: block; }
-        .role-name { font-size: 24px; color: #00ff41; font-weight: bold; text-transform: uppercase; }
-        .status-badge { background: #333; padding: 5px 15px; border-radius: 10px; font-size: 12px; }
-        h3 { color: #555; margin-top: 30px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: white; text-align: center; margin: 0; padding: 20px; }
+        .card { background: linear-gradient(145deg, #1a1a1a, #0a0a0a); border: 2px solid #0088cc; border-radius: 25px; padding: 30px 15px; margin-top: 20px; box-shadow: 0 0 20px rgba(0,136,204,0.4); }
+        .avatar { font-size: 80px; display: block; margin-bottom: 10px; }
+        .role { font-size: 28px; font-weight: bold; color: #00ff41; text-transform: uppercase; letter-spacing: 2px; }
+        .name { font-size: 18px; color: #aaa; margin-bottom: 20px; }
+        .status { display: inline-block; background: #222; padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #333; }
+        h2 { margin-top: 0; color: #0088cc; }
     </style>
 </head>
 <body>
-    <div class="my-card" id="card">
-        <span class="avatar" id="my-avatar">🕵️‍♂️</span>
-        <div id="my-name" style="font-size: 18px; margin-bottom: 5px;">Загрузка...</div>
-        <div class="role-name" id="my-role">РОЛЬ СКРЫТА</div>
-        <p class="status-badge">СТАТУС: В ИГРЕ</p>
+
+    <div id="game-view">
+        <div class="card">
+            <span class="avatar" id="avatar">❓</span>
+            <div class="name" id="username">Загрузка данных...</div>
+            <div class="role" id="role">ПОИСК РОЛИ...</div>
+            <br>
+            <div class="status">СТАТУС: ЖИВ ✅</div>
+        </div>
     </div>
 
-    <h3>Живые игроки (6)</h3>
-    <div id="player-list" style="color: #666; font-size: 14px;">
-        Обсуждайте и голосуйте в чате Telegram!
-    </div>
+    <p style="margin-top: 30px; color: #444; font-size: 14px;">Обсуждайте игру в голосовом чате Telegram</p>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
 
-        // Достаем данные из ссылки
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('role')) {
-            document.getElementById('my-role').innerText = params.get('role');
-            document.getElementById('my-avatar').innerText = params.get('avatar');
-            document.getElementById('my-name').innerText = params.get('name');
-            tg.HapticFeedback.impactOccurred('heavy');
+        // Функция для чтения данных из ссылки
+        function updatePlayerData() {
+            const params = new URLSearchParams(window.location.search);
+            const userRole = params.get('role');
+            const userAvatar = params.get('avatar');
+            const userName = params.get('name');
+
+            if (userRole && userAvatar) {
+                document.getElementById('role').innerText = userRole;
+                document.getElementById('avatar').innerText = userAvatar;
+                document.getElementById('username').innerText = userName;
+                
+                // Легкая вибрация при открытии
+                tg.HapticFeedback.impactOccurred('medium');
+            } else {
+                document.getElementById('username').innerText = "Ошибка доступа";
+                document.getElementById('role').innerText = "ЗАЙДИ ИЗ ЧАТА";
+            }
         }
+
+        updatePlayerData();
     </script>
 </body>
 </html>
