@@ -3,38 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaming Hub</title>
+    <title>GameLab Hub</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .card { background: #1e1e1e; border: 1px solid #333; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
-        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .online { color: #4caf50; font-size: 14px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 20px; }
+        .screen { display: none; }
+        .active { display: block; }
+        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 20px; padding: 20px; margin-bottom: 15px; text-align: center; }
+        button { background: #0088cc; color: white; border: none; padding: 12px 25px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .score { font-size: 48px; font-weight: bold; color: #0088cc; margin: 20px 0; }
+        .back-btn { background: #333; margin-top: 20px; }
+        h2 { color: #fff; margin-bottom: 10px; }
+        p { color: #aaa; font-size: 14px; }
     </style>
 </head>
 <body>
-    <h2>🎮 Мультигейминг</h2>
-    
-    <div class="card">
-        <h3>Мини-Кликер</h3>
-        <p>Собери больше всех очков сегодня!</p>
-        <p class="online">● 14 игроков онлайн</p>
-        <button onclick="alert('Игра запускается...')">ИГРАТЬ</button>
+
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="main-menu" class="screen active">
+        <h2>🎮 GameLab Hub</h2>
+        <p>Выбери развлечение:</p>
+        
+        <div class="card">
+            <h3>🚀 Турбо-Кликер</h3>
+            <p>Жми как не в себя!</p>
+            <button onclick="showScreen('clicker-screen')">ИГРАТЬ</button>
+        </div>
+
+        <div class="card">
+            <h3>🎲 Кости Судьбы</h3>
+            <p>Проверь свою удачу</p>
+            <button onclick="showScreen('dice-screen')">БРОСИТЬ</button>
+        </div>
+
+        <div class="card">
+            <h3>🤝 Поиск пати</h3>
+            <p>Найди напарника онлайн</p>
+            <button onclick="showScreen('lfg-screen')">НАЙТИ</button>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Поиск напарника</h3>
-        <p>Нужны +2 в CS2 или Dota?</p>
-        <button onclick="sendLFG()">Оставить заявку</button>
+    <!-- ИГРА 1: КЛИКЕР -->
+    <div id="clicker-screen" class="screen">
+        <h2>🚀 Турбо-Кликер</h2>
+        <div class="score" id="click-count">0</div>
+        <button style="height: 150px; border-radius: 50%; font-size: 24px;" onclick="clickMe()">ЖМИ!</button>
+        <button class="back-btn" onclick="sendResult('Кликер', clicks)">Завершить и сохранить</button>
+    </div>
+
+    <!-- ИГРА 2: КОСТИ -->
+    <div id="dice-screen" class="screen">
+        <h2>🎲 Кости Судьбы</h2>
+        <div class="score" id="dice-result">?</div>
+        <button onclick="rollDice()">БРОСИТЬ КОСТЬ</button>
+        <button class="back-btn" onclick="showScreen('main-menu')">Назад</button>
+    </div>
+
+    <!-- ИГРА 3: ПОИСК ПАТИ -->
+    <div id="lfg-screen" class="screen">
+        <h2>🤝 Поиск напарника</h2>
+        <p>В какую игру ищем?</p>
+        <select id="game-select" style="width: 100%; padding: 10px; border-radius: 10px; margin-bottom: 20px; background: #222; color: white; border: 1px solid #444;">
+            <option value="Dota 2">Dota 2</option>
+            <option value="CS 2">CS 2</option>
+            <option value="Minecraft">Minecraft</option>
+            <option value="Valorant">Valorant</option>
+        </select>
+        <button onclick="sendLFG()">Опубликовать заявку</button>
+        <button class="back-btn" onclick="showScreen('main-menu')">Назад</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачивает окно на весь экран
+        tg.expand();
+        let clicks = 0;
 
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Логика кликера
+        function clickMe() {
+            clicks++;
+            document.getElementById('click-count').innerText = clicks;
+        }
+
+        // Логика костей
+        function rollDice() {
+            let res = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dice-result').innerText = res;
+            tg.HapticFeedback.notificationOccurred('success'); // Вибрация при броске
+        }
+
+        // Отправка результата боту
+        function sendResult(game, value) {
+            tg.sendData(`Результат в ${game}: ${value} очков!`);
+        }
+
+        // Поиск пати
         function sendLFG() {
-            tg.sendData("Я ищу команду для игры!"); // Отправляет текст боту
-            tg.close(); // Закрывает мини-апп
+            let game = document.getElementById('game-select').value;
+            tg.sendData(`Ищу пати в ${game}`);
         }
     </script>
 </body>
