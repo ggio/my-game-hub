@@ -2,111 +2,157 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameLab Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mars Colony Strategy</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 20px; }
-        .screen { display: none; }
-        .active { display: block; }
-        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 20px; padding: 20px; margin-bottom: 15px; text-align: center; }
-        button { background: #0088cc; color: white; border: none; padding: 12px 25px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        .score { font-size: 48px; font-weight: bold; color: #0088cc; margin: 20px 0; }
-        .back-btn { background: #333; margin-top: 20px; }
-        h2 { color: #fff; margin-bottom: 10px; }
-        p { color: #aaa; font-size: 14px; }
+        body { font-family: 'Courier New', monospace; background: #0a0e14; color: #00ff41; margin: 0; padding: 15px; overflow: hidden; }
+        .stat-bar { display: flex; justify-content: space-around; background: #161b22; padding: 10px; border: 1px solid #00ff41; border-radius: 10px; margin-bottom: 20px; font-size: 14px; }
+        .log-box { height: 150px; background: #000; border: 1px solid #333; padding: 10px; overflow-y: auto; font-size: 12px; margin-bottom: 20px; color: #aaa; }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { background: #161b22; color: #00ff41; border: 1px solid #00ff41; padding: 15px 5px; cursor: pointer; font-family: inherit; border-radius: 5px; }
+        button:disabled { border-color: #333; color: #333; }
+        .event-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 2px solid #00ff41; padding: 20px; width: 80%; display: none; z-index: 100; text-align: center; }
+        .highlight { color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- ГЛАВНОЕ МЕНЮ -->
-    <div id="main-menu" class="screen active">
-        <h2>🎮 GameLab Hub</h2>
-        <p>Выбери развлечение:</p>
-        
-        <div class="card">
-            <h3>🚀 Турбо-Кликер</h3>
-            <p>Жми как не в себя!</p>
-            <button onclick="showScreen('clicker-screen')">ИГРАТЬ</button>
-        </div>
-
-        <div class="card">
-            <h3>🎲 Кости Судьбы</h3>
-            <p>Проверь свою удачу</p>
-            <button onclick="showScreen('dice-screen')">БРОСИТЬ</button>
-        </div>
-
-        <div class="card">
-            <h3>🤝 Поиск пати</h3>
-            <p>Найди напарника онлайн</p>
-            <button onclick="showScreen('lfg-screen')">НАЙТИ</button>
-        </div>
+    <div class="stat-bar">
+        <div>⚡ Энергия: <span id="energy">100</span></div>
+        <div>📦 Ресурсы: <span id="minerals">50</span></div>
+        <div>👥 Люди: <span id="pop">10</span></div>
     </div>
 
-    <!-- ИГРА 1: КЛИКЕР -->
-    <div id="clicker-screen" class="screen">
-        <h2>🚀 Турбо-Кликер</h2>
-        <div class="score" id="click-count">0</div>
-        <button style="height: 150px; border-radius: 50%; font-size: 24px;" onclick="clickMe()">ЖМИ!</button>
-        <button class="back-btn" onclick="sendResult('Кликер', clicks)">Завершить и сохранить</button>
+    <div id="game-log" class="log-box">
+        <div>> Система запущена...</div>
+        <div>> Добро пожаловать, Командор.</div>
     </div>
 
-    <!-- ИГРА 2: КОСТИ -->
-    <div id="dice-screen" class="screen">
-        <h2>🎲 Кости Судьбы</h2>
-        <div class="score" id="dice-result">?</div>
-        <button onclick="rollDice()">БРОСИТЬ КОСТЬ</button>
-        <button class="back-btn" onclick="showScreen('main-menu')">Назад</button>
+    <div class="actions">
+        <button onclick="mine()">⛏ Добыть ресурсы (-5⚡)</button>
+        <button onclick="build()">🏗 Построить жилье (-30📦)</button>
+        <button id="save-btn" onclick="saveGame()">💾 Сохранить в облако</button>
+        <button onclick="location.reload()">🔄 Начать заново</button>
     </div>
 
-    <!-- ИГРА 3: ПОИСК ПАТИ -->
-    <div id="lfg-screen" class="screen">
-        <h2>🤝 Поиск напарника</h2>
-        <p>В какую игру ищем?</p>
-        <select id="game-select" style="width: 100%; padding: 10px; border-radius: 10px; margin-bottom: 20px; background: #222; color: white; border: 1px solid #444;">
-            <option value="Dota 2">Dota 2</option>
-            <option value="CS 2">CS 2</option>
-            <option value="Minecraft">Minecraft</option>
-            <option value="Valorant">Valorant</option>
-        </select>
-        <button onclick="sendLFG()">Опубликовать заявку</button>
-        <button class="back-btn" onclick="showScreen('main-menu')">Назад</button>
+    <!-- Всплывающее событие -->
+    <div id="event-popup" class="event-popup">
+        <h3 id="event-title">Событие!</h3>
+        <p id="event-text"></p>
+        <div style="display: flex; gap: 10px;">
+            <button id="opt1" style="flex:1">Вариант 1</button>
+            <button id="opt2" style="flex:1">Вариант 2</button>
+        </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        let clicks = 0;
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+        // Состояние игры
+        let state = {
+            energy: 100,
+            minerals: 50,
+            pop: 10,
+            day: 1
+        };
+
+        const log = document.getElementById('game-log');
+
+        function updateUI() {
+            document.getElementById('energy').innerText = state.energy;
+            document.getElementById('minerals').innerText = state.minerals;
+            document.getElementById('pop').innerText = state.pop;
+            
+            if (state.energy <= 0 || state.pop <= 0) {
+                gameOver();
+            }
         }
 
-        // Логика кликера
-        function clickMe() {
-            clicks++;
-            document.getElementById('click-count').innerText = clicks;
+        function addLog(text) {
+            let div = document.createElement('div');
+            div.innerText = `> ${text}`;
+            log.prepend(div);
         }
 
-        // Логика костей
-        function rollDice() {
-            let res = Math.floor(Math.random() * 6) + 1;
-            document.getElementById('dice-result').innerText = res;
-            tg.HapticFeedback.notificationOccurred('success'); // Вибрация при броске
+        // Действия
+        function mine() {
+            if (state.energy >= 5) {
+                state.energy -= 5;
+                let found = Math.floor(Math.random() * 10) + 2;
+                state.minerals += found;
+                addLog(`Добыто ресурсов: ${found}`);
+                updateUI();
+                checkRandomEvent();
+            }
         }
 
-        // Отправка результата боту
-        function sendResult(game, value) {
-            tg.sendData(`Результат в ${game}: ${value} очков!`);
+        function build() {
+            if (state.minerals >= 30) {
+                state.minerals -= 30;
+                state.pop += 5;
+                addLog(`Построено жилье. Прибыло +5 колонистов.`);
+                updateUI();
+            } else {
+                addLog(`Недостаточно ресурсов! Нужно 30.`);
+            }
         }
 
-        // Поиск пати
-        function sendLFG() {
-            let game = document.getElementById('game-select').value;
-            tg.sendData(`Ищу пати в ${game}`);
+        // Интеллектуальная система событий
+        function checkRandomEvent() {
+            if (Math.random() > 0.7) {
+                showEvent();
+            }
         }
+
+        function showEvent() {
+            const events = [
+                {
+                    title: "Метеоритный дождь",
+                    text: "Метеориты повредили солнечные панели. Починить?",
+                    opt1: { name: "Да (-20📦)", run: () => { state.minerals -= 20; addLog("Панели починены."); } },
+                    opt2: { name: "Нет (-30⚡)", run: () => { state.energy -= 30; addLog("Энергия потеряна."); } }
+                },
+                {
+                    title: "Торговый корабль",
+                    text: "Предлагают обменять энергию на людей.",
+                    opt1: { name: "Обменять (-20⚡/+5👥)", run: () => { state.energy -= 20; state.pop += 5; } },
+                    opt2: { name: "Отказаться", run: () => { addLog("Корабль улетел."); } }
+                }
+            ];
+
+            let ev = events[Math.floor(Math.random() * events.length)];
+            document.getElementById('event-title').innerText = ev.title;
+            document.getElementById('event-text').innerText = ev.text;
+            document.getElementById('event-popup').style.display = 'block';
+
+            document.getElementById('opt1').onclick = () => { ev.opt1.run(); closeEvent(); };
+            document.getElementById('opt2').onclick = () => { ev.opt2.run(); closeEvent(); };
+        }
+
+        function closeEvent() {
+            document.getElementById('event-popup').style.display = 'none';
+            updateUI();
+        }
+
+        function saveGame() {
+            tg.sendData(`SAVE: День ${state.day}, Население ${state.pop}`);
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        function gameOver() {
+            alert("Колония погибла! Начните заново.");
+            state = { energy: 100, minerals: 50, pop: 10, day: 1 };
+            updateUI();
+        }
+
+        // Регенерация энергии со временем
+        setInterval(() => {
+            state.energy = Math.min(state.energy + 2, 100);
+            updateUI();
+        }, 5000);
+
     </script>
 </body>
 </html>
