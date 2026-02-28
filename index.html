@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming Hub</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        .card { background: #1e1e1e; border: 1px solid #333; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .online { color: #4caf50; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h2>🎮 Мультигейминг</h2>
+    
+    <div class="card">
+        <h3>Мини-Кликер</h3>
+        <p>Собери больше всех очков сегодня!</p>
+        <p class="online">● 14 игроков онлайн</p>
+        <button onclick="alert('Игра запускается...')">ИГРАТЬ</button>
+    </div>
+
+    <div class="card">
+        <h3>Поиск напарника</h3>
+        <p>Нужны +2 в CS2 или Dota?</p>
+        <button onclick="sendLFG()">Оставить заявку</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачивает окно на весь экран
+
+        function sendLFG() {
+            tg.sendData("Я ищу команду для игры!"); // Отправляет текст боту
+            tg.close(); // Закрывает мини-апп
+        }
+    </script>
+</body>
+</html>
