@@ -14,20 +14,4 @@ THEMES = {
         "roles": {"mafia": "Хакер", "doctor": "Рипердок", "detective": "Коп", "civilian": "Самурай"},
         "avatars": ["🕶", "🦾", "💻", "📟", "🌃", "💉", "🔌"]
     }
-}THEMES = {
-    "medieval": {
-        "name": "Средневековье ⚔️",
-        "roles": {"mafia": "Инквизитор", "doctor": "Лекарь", "detective": "Шериф", "civilian": "Крестьянин"},
-        "avatars": ["🧙‍♂️", "🧛‍♂️", "🤴", "👷‍♂️", "👩‍🌾", "🧝‍♂️", "🛡"]
-    },
-    "star_wars": {
-        "name": "Звездные Войны ✨",
-        "roles": {"mafia": "Ситх", "doctor": "Дроид-медик", "detective": "Джедай", "civilian": "Повстанец"},
-        "avatars": ["👽", "🤖", "👨‍🚀", "🛸", "⚔️", "🌟", "🌑"]
-    },
-    "cyberpunk": {
-        "name": "Киберпанк 🤖",
-        "roles": {"mafia": "Хакер", "doctor": "Рипердок", "detective": "Коп", "civilian": "Самурай"},
-        "avatars": ["🕶", "🦾", "💻", "📟", "🌃", "💉", "🔌"]
-    }
 }
